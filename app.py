@@ -1095,5 +1095,3 @@ def registration():
             "message": "There are no registrations."
         }
     ), 404
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
