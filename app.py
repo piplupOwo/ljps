@@ -1015,13 +1015,43 @@ def learningjourneyuser(staff_id):
 
     
     # print(LearningJourney['staff_id'])
+
     listoflj = LearningJourney.query.filter_by(staff_id = staff_id)
+    staff = Staff.query.filter_by(staff_id = staff_id).first()
     if listoflj:
+        learningjourneysjson = []
+
+        # iterate through learningjourneys
+        for learningjourneyobject in listoflj:
+            learningjourneysjson.append(learningjourneyobject.json())
+
+            linked_jobrole = JobRole.query.filter_by(jobrole_id = learningjourneyobject.jobrole_id).first()
+            linked_courses = []
+
+            learningjourney = LearningJourney.query.filter_by(lj_id = learningjourneyobject.lj_id).first()
+            # iterate through ljcourses
+
+            ljcourses = LearningJourneyCourse.query.filter_by(lj_id = learningjourney.lj_id)
+            for ljcourseobject in ljcourses:
+                course = Course.query.filter_by(course_id = ljcourseobject.course_id).first()
+                linked_courses.append(course.json())
+
+            linked_skills = []
+            for roleskillobject in linked_jobrole.roleskills:
+                skill = Skill.query.filter_by(skill_id = roleskillobject.skill_id).first()
+                linked_skills.append(skill.json())
+
+
+            learningjourneysjson[-1]['linked_jobrole'] = linked_jobrole.json()
+            learningjourneysjson[-1]['linked_jobrole']['linked_skills'] = linked_skills
+            learningjourneysjson[-1]['linked_courses'] = linked_courses
+                
+
         return jsonify(
             {
                 "code":200,
                 "data":{
-                    "learningjourneys": [learningjourney.json() for learningjourney in listoflj]
+                    "learningjourneys": learningjourneysjson
                 }
             }
         )
@@ -1052,47 +1082,37 @@ def learningjourneyuser(staff_id):
     #     }
     # ), 404
 
-#get learning journey courses table
-@app.route('/learningjourneycourse')
-def learningjourneycourse():
-    learningjourneycourse = LearningJourneyCourse.query.all()
+# delete learning journey
+@app.route('/learningjourney/<int:lj_id>', methods=['DELETE'])
+def delete_learningjourney(lj_id):
+    learningjourney = LearningJourney.query.filter_by(lj_id=lj_id).first()
+    if learningjourney:
+        try:
+            # iterate through learningjourney.ljcourses
+            for ljcourseobject in learningjourney.ljcourses:
+                db.session.delete(ljcourseobject)
 
-    if len(learningjourneycourse):
+            db.session.delete(learningjourney)
+            db.session.commit()
+        except:
+            return jsonify(
+                {
+                    "code": 500,
+                    "message": "An error occurred deleting the learningjourney."
+                }
+            ), 500
+
         return jsonify(
             {
                 "code": 200,
-                "data": {
-                    "learningjourneycourse": [learningjourneycourse.json() for learningjourneycourse in learningjourneycourse]
-                }
+                "data": learningjourney.json()
             }
         )
 
     return jsonify(
         {
             "code": 404,
-            "message": "There are no learningjourneycourses."
-        }
-    ), 404
-
-#get registrations
-@app.route('/registration')
-def registration():
-    registrations = Registration.query.all()
-
-    if len(registrations):
-        return jsonify(
-            {
-                "code": 200,
-                "data": {
-                    "registrations": [registration.json() for registration in registrations]
-                }
-            }
-        )
-
-    return jsonify(
-        {
-            "code": 404,
-            "message": "There are no registrations."
+            "message": "Learning Journey not found."
         }
     ), 404
 
