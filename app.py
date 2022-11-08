@@ -13,7 +13,7 @@ DBname = 'ljms'
 app = Flask(__name__)
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://b1e8ed923266c6:386c09a4@us-cdbr-east-06.cleardb.net/heroku_6da23819e2d22f8?reconnect=true" #f'mysql+mysqlconnector://{DBusername}:{DBpassword}@{DBhost}:{DBport}/{DBname}'
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://b1e8ed923266c6:386c09a4@us-cdbr-east-06.cleardb.net/heroku_6da23819e2d22f8?reconnect=true"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -501,7 +501,12 @@ def find_skill(skill_id):
 @app.route('/skill', methods=['POST'])
 def add_skill():
     data = request.get_json()
-    skill = Skill(**data, skill_id=Skill.query.count() + 1)
+    skill_id = 1
+    try:
+        skill_id = Skill.query.count() + 1
+    except:
+        pass
+    skill = Skill(**data, skill_id=skill_id)
     skill_name = data['skill_name'].lower()
     if (Skill.query.filter(func.lower(Skill.skill_name) == skill_name).first()):
         return jsonify(
@@ -942,7 +947,13 @@ def getsoftdeletedjobroles():
 @app.route('/jobrole', methods=['POST'])
 def add_jobrole():
     data = request.get_json()
-    jobrole = JobRole(**data, jobrole_id=JobRole.query.count() + 1)
+    jobrole_id = 1
+    try:
+        jobrole_id = JobRole.query.count() + 1
+    except:
+        pass
+
+    jobrole = JobRole(**data, jobrole_id=jobrole_id)
     # check if jobrole already exists
     if JobRole.query.filter_by(jobrole_name=jobrole.jobrole_name).first():
         return jsonify(
@@ -1054,7 +1065,7 @@ def update_courseskill_forskill(skill_id):
             try:
                 csid = CourseSkill.query.filter(CourseSkill.csid is not None).order_by(
                     CourseSkill.csid).all()[-1].csid + 1
-            except BaseException:
+            except:
                 pass
 
             courseskill = CourseSkill(
@@ -1104,7 +1115,7 @@ def update_roleskill_forrole(jobrole_id):
             try:
                 rsid = RoleSkill.query.filter(RoleSkill.rsid is not None).order_by(
                     RoleSkill.rsid).all()[-1].rsid + 1
-            except BaseException:
+            except:
                 pass
 
             roleskill = RoleSkill(
@@ -1165,7 +1176,7 @@ def add_courseskill():
     try:
         csid = CourseSkill.query.filter(CourseSkill.csid is not None).order_by(
             CourseSkill.csid).all()[-1].csid + 1
-    except BaseException:
+    except:
         pass
 
     courseskill = CourseSkill(**data, csid=csid)
@@ -1344,10 +1355,10 @@ def learningjourneyuser(staff_id):
     # ), 404
 
 # get learning journey by name
-@app.route('/learningjourney/name/<string:lj_name>')
-def get_learningjourney_name(lj_name):
-    learningjourney = LearningJourney.query.filter(func.lower(
-            LearningJourney.lj_name) == lj_name).first()
+@app.route('/learningjourney/staff/<int:staff_id>/name/<string:lj_name>')
+def get_learningjourney_name(staff_id, lj_name):
+    learningjourney = LearningJourney.query.filter(
+        LearningJourney.staff_id == staff_id, LearningJourney.lj_name == lj_name).first()
 
     if learningjourney:
         return jsonify(
@@ -1372,6 +1383,7 @@ def add_learningjourney():
     staff_id = data["staff_id"]
     jobrole_id = data["jobrole_id"]
     lj_name = data["lj_name"]
+    lj_id = 1
 
     try:
         lj_id = LearningJourney.query.filter(
@@ -1379,7 +1391,7 @@ def add_learningjourney():
             LearningJourney.lj_id).all()[
                 -1].lj_id + 1
     except:
-        lj_id = 1
+        pass
 
     try:
         lj_id = data["lj_id"]
@@ -1392,8 +1404,8 @@ def add_learningjourney():
         jobrole_id=jobrole_id,
         lj_id=lj_id)
 
-    if (LearningJourney.query.filter(func.lower(
-            LearningJourney.lj_name) == lj_name).first()):
+    if (LearningJourney.query.filter(
+        LearningJourney.staff_id == staff_id, LearningJourney.lj_name == lj_name).first()):
         return jsonify(
             {
                 "code": 400,
@@ -1407,9 +1419,14 @@ def add_learningjourney():
 
         lj_id = learningjourney.lj_id
         for course_id in courses:
-            print(course_id)
-            ljc_id = LearningJourneyCourse.query.filter(LearningJourneyCourse.ljc_id is not None).order_by(
-                LearningJourneyCourse.ljc_id).all()[-1].ljc_id + 1
+
+            ljc_id = 1
+            try:
+                ljc_id = LearningJourneyCourse.query.filter(LearningJourneyCourse.ljc_id is not None).order_by(
+                    LearningJourneyCourse.ljc_id).all()[-1].ljc_id + 1
+            except:
+                pass
+
             lj_course = LearningJourneyCourse(
                 lj_id=lj_id, course_id=course_id, ljc_id=ljc_id)
             db.session.add(lj_course)
@@ -1418,10 +1435,10 @@ def add_learningjourney():
     except BaseException:
         return jsonify(
             {
-                "code": 500,
+                "code": 523,
                 "message": "An error occurred creating the learningjourney."
             }
-        ), 500
+        ), 523
 
     return jsonify(
         {
@@ -1444,6 +1461,7 @@ def delete_learningjourney(lj_id):
 
             db.session.delete(learningjourney)
             db.session.commit()
+
         except BaseException:
             return jsonify(
                 {
