@@ -13,7 +13,7 @@ DBname = 'ljms'
 app = Flask(__name__)
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql://b1e8ed923266c6:386c09a4@us-cdbr-east-06.cleardb.net/heroku_6da23819e2d22f8?reconnect=true"
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://b1e8ed923266c6:386c09a4@us-cdbr-east-06.cleardb.net/heroku_6da23819e2d22f8?collation=utf8mb4_general_ci"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
